@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Search Application</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], 
+        input[type="file"], 
+        select, 
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .options-container {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .status.success {
+            background-color: #d1f5d3;
+            border-color: #5cb85c;
+        }
+
+        .status.error {
+            background-color: #f5d1d1;
+            border-color: #d9534f;
+        }
+
+        .status.loading {
+            background-color: #f5f5d1;
+            border-color: #f0ad4e;
+        }
+
+        .results-container {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        .result-item h3 {
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .result-item p {
+            margin-bottom: 5px;
+        }
+
+        .result-item .similarity {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .dataset-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .columns-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Semantic Search Application</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="search">Search</div>
+            <div class="tab" data-tab="upload">Upload Dataset</div>
+            <div class="tab" data-tab="status">System Status</div>
+        </div>
+        
+        <div class="tab-content active" id="search-tab">
+            <h2>Search</h2>
+            <form id="search-form">
+                <div class="form-group">
+                    <label for="query">Query:</label>
+                    <textarea id="query" name="query" placeholder="Enter your search query" required></textarea>
+                </div>
+                
+                <div class="options-container">
+                    <div class="form-group">
+                        <label for="top-k">Number of results:</label>
+                        <input type="number" id="top-k" name="top-k" value="5" min="1" max="100">
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="use-cross-encoder" name="use-cross-encoder" checked>
+                        <label for="use-cross-encoder">Use cross-encoder for re-ranking</label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="candidate-count">Candidate count for re-ranking:</label>
+                        <input type="number" id="candidate-count" name="candidate-count" value="100" min="1" max="1000">
+                    </div>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="storage-memory" name="storage" value="memory" checked>
+                            <label for="storage-memory">In-memory search</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="storage-qdrant" name="storage" value="qdrant">
+                            <label for="storage-qdrant">Qdrant search</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit">Search</button>
+            </form>
+            
+            <div id="search-status" class="status hidden"></div>
+            
+            <div id="search-results" class="results-container hidden">
+                <h3>Search Results</h3>
+                <div id="best-match" class="result-item"></div>
+                <h4>All Matches</h4>
+                <div id="all-matches"></div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="upload-tab">
+            <h2>Upload Dataset</h2>
+            <form id="upload-form">
+                <div class="form-group">
+                    <label for="dataset-file">Dataset File (CSV, Excel, or JSON):</label>
+                    <input type="file" id="dataset-file" name="dataset-file" accept=".csv,.xlsx,.json" required>
+                </div>
+                
+                <div class="columns-container">
+                    <div class="column">
+                        <div class="form-group">
+                            <label for="col1-name">Column 1 (Text to search):</label>
+                            <input type="text" id="col1-name" name="col1-name" placeholder="Leave empty for first column">
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="form-group">
+                            <label for="col2-name">Column 2 (Result to return):</label>
+                            <input type="text" id="col2-name" name="col2-name" placeholder="Leave empty for second column">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="storage-memory-upload" name="storage-upload" value="memory" checked>
+                        <label for="storage-memory-upload">In-memory only</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="storage-qdrant-upload" name="storage-upload" value="qdrant">
+                        <label for="storage-qdrant-upload">Qdrant only</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="storage-both-upload" name="storage-upload" value="both">
+                        <label for="storage-both-upload">Both</label>
+                    </div>
+                </div>
+                
+                <button type="submit">Upload</button>
+            </form>
+            
+            <div id="upload-status" class="status hidden"></div>
+            
+            <div id="dataset-info" class="dataset-info hidden"></div>
+        </div>
+        
+        <div class="tab-content" id="status-tab">
+            <h2>System Status</h2>
+            <button id="refresh-status">Refresh Status</button>
+            
+            <div id="system-status" class="status">
+                <p>Loading system status...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const API_BASE_URL = "http://127.0.0.1:8699"; // Assumes API is hosted on same origin
+        
+        // DOM Elements
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        const searchForm = document.getElementById('search-form');
+        const searchStatus = document.getElementById('search-status');
+        const searchResults = document.getElementById('search-results');
+        const bestMatch = document.getElementById('best-match');
+        const allMatches = document.getElementById('all-matches');
+        
+        const uploadForm = document.getElementById('upload-form');
+        const uploadStatus = document.getElementById('upload-status');
+        const datasetInfo = document.getElementById('dataset-info');
+        
+        const refreshStatusBtn = document.getElementById('refresh-status');
+        const systemStatus = document.getElementById('system-status');
+        
+        // Functions
+        function updateStatusElement(element, message, type) {
+            element.textContent = message;
+            element.className = `status ${type}`;
+            element.classList.remove('hidden');
+        }
+        
+        function formatPercentage(value) {
+            return `${(value * 100).toFixed(2)}%`;
+        }
+        
+        // Tab functionality
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and tab contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Show corresponding tab content
+                const tabId = `${tab.getAttribute('data-tab')}-tab`;
+                document.getElementById(tabId).classList.add('active');
+                
+                // If status tab is selected, refresh system status
+                if (tab.getAttribute('data-tab') === 'status') {
+                    getSystemStatus();
+                }
+            });
+        });
+        
+        // Search functionality
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            updateStatusElement(searchStatus, 'Searching...', 'loading');
+            searchResults.classList.add('hidden');
+            
+            const formData = new FormData(searchForm);
+            const query = formData.get('query');
+            const topK = formData.get('top-k');
+            const useCrossEncoder = formData.get('use-cross-encoder') === 'on';
+            const candidateCount = formData.get('candidate-count');
+            const storage = document.querySelector('input[name="storage"]:checked').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/search?top_k=${topK}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: query,
+                        use_cross_encoder: useCrossEncoder,
+                        candidate_count: parseInt(candidateCount),
+                        storage: storage
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'An error occurred during search');
+                }
+                
+                const data = await response.json();
+                
+                // Update best match
+                bestMatch.innerHTML = `
+                    <h3>Best Match</h3>
+                    <p><strong>Query:</strong> ${data.query}</p>
+                    <p><strong>Result:</strong> ${data.result}</p>
+                    <p><strong>Similarity:</strong> <span class="similarity">${formatPercentage(data.similarity_score)}</span></p>
+                    <p><strong>Method:</strong> ${data.method_used}</p>
+                `;
+                
+                // Update all matches
+                allMatches.innerHTML = '';
+                data.top_matches.forEach((match, index) => {
+                    const matchElement = document.createElement('div');
+                    matchElement.className = 'result-item';
+                    matchElement.innerHTML = `
+                        <h3>Match ${index + 1}</h3>
+                        <p><strong>Text:</strong> ${match.text}</p>
+                        <p><strong>Result:</strong> ${match.result}</p>
+                        <p><strong>Similarity:</strong> <span class="similarity">${formatPercentage(match.similarity)}</span></p>
+                    `;
+                    allMatches.appendChild(matchElement);
+                });
+                
+                // Show results
+                searchResults.classList.remove('hidden');
+                updateStatusElement(searchStatus, 'Search completed successfully', 'success');
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                updateStatusElement(searchStatus, `Error: ${error.message}`, 'error');
+            }
+        });
+        
+        // Upload functionality
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            updateStatusElement(uploadStatus, 'Uploading dataset...', 'loading');
+            datasetInfo.classList.add('hidden');
+            
+            const formData = new FormData();
+            const file = document.getElementById('dataset-file').files[0];
+            const col1Name = document.getElementById('col1-name').value;
+            const col2Name = document.getElementById('col2-name').value;
+            const storage = document.querySelector('input[name="storage-upload"]:checked').value;
+            
+            formData.append('file', file);
+            if (col1Name) formData.append('col1_name', col1Name);
+            if (col2Name) formData.append('col2_name', col2Name);
+            formData.append('storage', storage);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'An error occurred during upload');
+                }
+                
+                const data = await response.json();
+                
+                // Show success message
+                updateStatusElement(uploadStatus, `Dataset uploaded successfully with ${data.message}`, 'success');
+                
+                // Get and display dataset info
+                getDatasetInfo(storage);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                updateStatusElement(uploadStatus, `Error: ${error.message}`, 'error');
+            }
+        });
+        
+        // Dataset info functionality
+        async function getDatasetInfo(storage = 'memory') {
+            try {
+                const response = await fetch(`${API_BASE_URL}/dataset-info?storage=${storage}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'An error occurred fetching dataset info');
+                }
+                
+                const data = await response.json();
+                
+                // Display dataset info
+                datasetInfo.innerHTML = `
+                    <h3>Dataset Information (${data.storage})</h3>
+                    <p><strong>Number of Records:</strong> ${data.num_records}</p>
+                    <h4>Sample Data:</h4>
+                    <div class="columns-container">
+                        <div class="column">
+                            <strong>Column 1 (Search Text):</strong>
+                            <ul>
+                                ${data.sample_col1.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class="column">
+                            <strong>Column 2 (Results):</strong>
+                            <ul>
+                                ${data.sample_col2.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                datasetInfo.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Dataset info error:', error);
+                datasetInfo.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+                datasetInfo.classList.remove('hidden');
+            }
+        }
+        
+        // System status functionality
+        async function getSystemStatus() {
+            try {
+                systemStatus.innerHTML = '<div class="loader"></div> Loading system status...';
+                
+                const response = await fetch(`${API_BASE_URL}/status`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'An error occurred fetching system status');
+                }
+                
+                const data = await response.json();
+                
+                // Display system status
+                systemStatus.innerHTML = `
+                    <h3>System Status</h3>
+                    <p><strong>Bi-encoder Model:</strong> ${data.bi_encoder_loaded ? '✅ Loaded' : '❌ Not loaded'}</p>
+                    <p><strong>Cross-encoder Model:</strong> ${data.cross_encoder_loaded ? '✅ Loaded' : '❌ Not loaded'}</p>
+                    <p><strong>In-memory Data:</strong> ${data.in_memory_data_loaded ? '✅ Loaded' : '❌ Not loaded'}</p>
+                    <p><strong>In-memory Records:</strong> ${data.in_memory_records}</p>
+                    <p><strong>Qdrant Status:</strong> ${data.qdrant_status === 'connected' ? '✅ Connected' : `❌ ${data.qdrant_status}`}</p>
+                    <p><strong>Qdrant Collection Count:</strong> ${data.qdrant_collection_count}</p>
+                `;
+                
+            } catch (error) {
+                console.error('System status error:', error);
+                systemStatus.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Initial setup
+        refreshStatusBtn.addEventListener('click', getSystemStatus);
+        getSystemStatus(); // Initial status check
+        
+        // Update candidate count input based on cross-encoder checkbox
+        document.getElementById('use-cross-encoder').addEventListener('change', function() {
+            document.getElementById('candidate-count').disabled = !this.checked;
+        });
+    </script>
+</body>
+</html>
